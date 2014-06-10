@@ -142,38 +142,24 @@ def score_variants(batch, prefered_models = []):
         # Filter
         
         filt = variant.get('FILTER', 'NOTPASS').strip()
-        # print('Filter: %s' % filt)
         
         # Conservation scores:
+        
         # Base
         gerp_base = info_dict.get('dbNSFP_GERP++_RS', None)
-        # gerp_base = info_dict.get('CG', None)
-        # print('GERP base score: %s' % gerp_base)
-        # gerp_base_again = info_dict.get('CG', None)
-        # gerp_base = info_dict.get('CG', None)
-        # print('GERP base score again: %s' % gerp_base_again)
         
         # Region
         mce64way = info_dict.get('dbNSFP_phastCons46way_primate', None)
         # print('dbNSFP_phastCons46way_primate: %s' % mce64way)
         
         gerp_region = info_dict.get('dbNSFP_GERP++_NR', None)
-        # print('GERP region score: %s' % gerp_region)
-        gerp_region = info_dict.get('CG', None)
-        # print('GERP region score: %s' % gerp_region)
         #Hur ska vi göra med GERP region!!!???
-        
         phylop = info_dict.get('dbNSFP_phyloP46way_primate', None)
-        # print('dbNSFP_phyloP46way_primate: %s' % mce64way)
         
         # segdup = variant.get('Genomic_super_dups', None)
         
         # hgmd = variant.get('HGMD', None)
         
-        # print('')
-        # print(variant['variant_id'])
-        # print('Prefered models: %s Models followed: %s' % (prefered_models, variant_models))
-        # 
         # print('Score after most severe consequence %s' % score)
         # print('Max score after this step 5\n')
         # 
