@@ -134,7 +134,7 @@ def score_variants(batch, prefered_models = []):
         # print('dbSNP 129 freq: %s' % dbsnp129_frequency)
         dbsnp_id = variant.get('ID', None)
         # print('dbSNP ID: %s' % dbsnp_id)
-        esp_frequency = info_dict.get('ESP_freq', None)
+        esp_frequency = info_dict.get('ESPMAF', None)
         # print('ESP freq: %s' % esp_frequency)
         hbvdb = info_dict.get('BVDMAF', None)
         # print('HBVDB freq: %s' % hbvdb)
@@ -149,7 +149,7 @@ def score_variants(batch, prefered_models = []):
         gerp_base = info_dict.get('dbNSFP_GERP++_RS', None)
         # gerp_base = info_dict.get('CG', None)
         # print('GERP base score: %s' % gerp_base)
-        gerp_base_again = info_dict.get('CG', None)
+        # gerp_base_again = info_dict.get('CG', None)
         # gerp_base = info_dict.get('CG', None)
         # print('GERP base score again: %s' % gerp_base_again)
         
