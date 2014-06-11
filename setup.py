@@ -15,7 +15,7 @@ long_description = 'Add rank scores to variants in Variant Call Format (VCF) fil
 #     long_description = file.read()
 
 setup(name='score_mip_variants',
-    version='0.2',
+    version='0.3',
     description='Annotate vcf variants with a rank score',
     author = 'Mans Magnusson',
     author_email = 'mans.magnusson@scilifelab.se',
