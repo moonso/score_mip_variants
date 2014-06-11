@@ -110,7 +110,7 @@ def score_variants(batch, prefered_models = []):
         
         poly_phen = info_dict.get('dbNSFP_Polyphen2_HVAR_score', None)
         if poly_phen:
-            poly_phen = max([float(score) for score in poly_phen.split(',') if is_number(score)])
+            poly_phen = max([float(poly_score) for poly_score in poly_phen.split(',') if is_number(poly_score)])
         # print('dbNSFP_Polyphen2_HVAR_score: %s' % poly_phen)
         
         
