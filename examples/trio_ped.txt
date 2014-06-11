@@ -1,0 +1,4 @@
+#FamilyID	SampleID	Father	Mother	Sex	Phenotype	CMMSID	Tissue_origin	Isolation_kit	Isolation_date	Isolation_personnel	Medical_doctor	Inheritance_model	Phenotype_terms 	CMMS_seqID	SciLifeID	Capture_kit	Capture_date	Capture_personnel 	Clustering_date	Sequencing_kit	Clinical_db
+500	500-1-1A	500-2-1U	500-2-2U	1	2	unknown	Blood	Qiagen midi	NA	NA	NA	AR;AR_compound;AD_denovo;X	NA	NA	NA	Agilent_SureSelect.V5	NA	NA	NA	NA	NA
+500	500-2-2U	0	0	2	1	unknown	Blood	Qiagen midi	NA	NA	NA	NA	NA	WES10	NA	Agilent_SureSelect.V5	NA	NA	NA	NA	NA
+500	500-2-1U	0	0	1	1	unknown	Blood	Qiagen midi	NA	NA	NA	NA	NA	WES10	NA	Agilent_SureSelect.V5	NA	NA	NA	NA	NA
