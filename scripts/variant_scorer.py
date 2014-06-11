@@ -98,7 +98,7 @@ def main():
     # )
     
     args = parser.parse_args()
-    
+        
     fam_file = args.family_file[0]
     var_file = args.variant_file[0]
     
