@@ -43,7 +43,7 @@ class VariantScorer(object):
     def score_compounds(self, batch):
         """Score the compounds in a batch."""
         for var in batch:
-            if 'Comp' in batch[var]['info_dict']:
+            if 'Comp' in batch[var]['info_dict'] and batch[var]['info_dict'].get('Comp','-') != '-':
                 compounds = batch[var]['info_dict']['Comp'].split(':')
                 comp_list = []
                 for comp in compounds:
@@ -60,7 +60,8 @@ class VariantScorer(object):
             info_field = batch[variant]['INFO'].split(';')
             for pos in range(len(info_field)):
                 if info_field[pos].split('=')[0] == 'Comp':
-                    info_field[pos] = 'Comp=' + batch[variant]['Comp']
+                    if info_field[pos].split('=')[-1] != '-':
+                        info_field[pos] = 'Comp=' + batch[variant]['Comp']
             info_field.append('RS=' + str(batch[variant]['Individual_rank_score']))
             batch[variant]['INFO'] = ';'.join(info_field)
             print_line = [batch[variant].get(entry, '-') for entry in header]
