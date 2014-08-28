@@ -94,7 +94,7 @@ def score_variants(batch, prefered_models = []):
         
         # Models of inheritance are annotated as GM=AR:AR_comp...
         
-        variant_models = info_dict.get('GM','NA').split(':')
+        variant_models = info_dict.get('GeneticModels','NA').split(',')
         # Predictors
         
         mutation_taster = info_dict.get('dbNSFP_MutationTaster_score', None)
