@@ -21,12 +21,21 @@ setup(name='score_mip_variants',
     author_email = 'mans.magnusson@scilifelab.se',
     url = 'http://github.com/moonso/rank_mip_variants',
     license = 'MIT License',
-    install_requires=['vcf_parser', 'ped_parser', 'click'],
-    packages = ['score_mip_variants'],
-    scripts = ['scripts/variant_scorer.py'],
+    install_requires=[
+        'vcf_parser', 
+        'ped_parser', 
+        'click'
+    ],
+    packages = [
+        'score_mip_variants'
+    ],
+    scripts = [
+        'scripts/score_mip_variants'
+    ],
     keywords = ['ranking','scoring', 'vcf', 'variants'],
     classifiers = [
         "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Development Status :: 4 - Beta",

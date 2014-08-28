@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-score_variant.py
+score_model.py
 
-Script that takes a variant as input and modify it with a score depending on its different values.
+Script that takes a batch of variants as input and modify it with a score depending on its different values.
 
 Possible names for the list of genetic models are:
 
@@ -13,6 +13,10 @@ AD, AD_denovo, AR, AR_denovo, AR_compound, X, X_denovo
 Created by Måns Magnusson on 2013-08-14.
 Copyright (c) 2013 __MyCompanyName__. All rights reserved.
 """
+
+from __future__ import print_function
+from __future__ import unicode_literals
+
 
 import sys
 import os

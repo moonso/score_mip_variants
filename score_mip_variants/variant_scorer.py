@@ -27,9 +27,7 @@ from tempfile import NamedTemporaryFile
 
 from pprint import pprint as pp
 
-from score_mip_variants import score_variants
-
-# from score_mip_variants import score_variants
+from score_mip_variants import score_model
 
 
 class VariantScorer(object):
@@ -50,7 +48,7 @@ class VariantScorer(object):
                 comp_list = []
                 for comp in compounds:
                     comp_score = (int(batch[var].get('Individual_rank_score',0)) +
-                                int(batch[comp].get('Individual_rank_score',0)))
+                                int(batch.get(comp,{}).get('Individual_rank_score',0)))
                     comp_list.append(comp+'>'+str(comp_score))
                     batch[var]['Compounds'] = ','.join(comp_list)
         
@@ -91,7 +89,7 @@ class VariantScorer(object):
             else:
                 
                 if len(set.intersection(new_annotation,current_annotation)) == 0:
-                    score_variants.score_variants(batch, self.prefered_models)
+                    score_model.score_variants(batch, self.prefered_models)
                     self.score_compounds(batch)
                     self.print_variants(batch, self.variant_parser.header, self.temp_file)
                     
@@ -102,7 +100,7 @@ class VariantScorer(object):
                     batch[variant['variant_id']] = variant
                     current_annotation = current_annotation.union(new_annotation)
         
-        score_variants.score_variants(batch, self.prefered_models)
+        score_model.score_variants(batch, self.prefered_models)
         self.score_compounds(batch)
         self.print_variants(batch, self.variant_parser.header, self.temp_file)
         
