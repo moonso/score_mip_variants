@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-run_genmod.py
+score_mip_variants.py
 
-Script for annotating genetic models in variant files.
+Script for scoring genetic variants in VCF files.
 
 Created by Måns Magnusson on 2014-01-21.
 Copyright (c) 2013 __MyCompanyName__. All rights reserved.
@@ -26,7 +26,7 @@ from datetime import datetime
 
 from pprint import pprint as pp
 
-from score_mip_variants import scorer, variant_sorter
+from score_mip_variants import variant_scorer, variant_sorter
 from ped_parser import parser as ped_parser
 from vcf_parser import parser as vcf_parser
 
@@ -48,7 +48,7 @@ def get_family(family_file, family_type):
 def add_metadata(head, command_line_string):
     """Add metadata for the information added by this script."""
     
-    head.add_info('RS', '1', 'Integer', "Combined ranc score for this variant in this family.")
+    head.add_info('RankScore', '1', 'Integer', "Combined rank score for the variant in this family.")
     head.add_version_tracking('score_mip_variants', Version, str(datetime.now()), command_line_string)
     
     return
@@ -111,7 +111,7 @@ def print_version(ctx, param, value):
         default='cmms',
         help='If the analysis use one of the known setups, please specify which one. Default is cmms.'
 )
-def variant_scorer(family_file, variant_file, family_type, silent, outfile):
+def score_mip_variants(family_file, variant_file, family_type, silent, outfile):
     """Score the variants in a vcf file based on the MIP system."""
     
     frame = inspect.currentframe()
@@ -128,9 +128,7 @@ def variant_scorer(family_file, variant_file, family_type, silent, outfile):
     
     my_vcf_parser = vcf_parser.VCFParser(variant_file)
     head = my_vcf_parser.metadata
-    
-    temporary_variant_file = NamedTemporaryFile(mode='w')
-    
+        
     if set(my_family.individuals.keys()) != set(my_vcf_parser.individuals):
         
         print('There must be same individuals in ped file and vcf file! Aborting...')
@@ -138,8 +136,14 @@ def variant_scorer(family_file, variant_file, family_type, silent, outfile):
         print('Individuals in VCF file: %s' % '\t'.join(list(my_vcf_parser.individuals)))
         sys.exit()
     
-    my_parser = scorer.VariantScorer(my_vcf_parser, temporary_variant_file, my_family.models_of_inheritance)
-    my_parser.parse()
+    
+    temp_file = NamedTemporaryFile(delete=False)
+    temp_file.close()
+    temporary_variant_file = open(temp_file.name, mode='w', encoding='utf-8', errors='replace')
+    
+    scorer = variant_scorer.VariantScorer(my_vcf_parser, temporary_variant_file, my_family.models_of_inheritance)
+    scorer.parse()
+    
     temporary_variant_file.seek(0)
     
     
@@ -154,5 +158,5 @@ def variant_scorer(family_file, variant_file, family_type, silent, outfile):
     
 
 if __name__ == '__main__':
-    variant_scorer()
+    score_mip_variants()
 
