@@ -19,7 +19,10 @@ import sys
 import os
 import argparse
 from tempfile import NamedTemporaryFile
-from codecs import open
+from codecs import open, getwriter
+
+
+# sys.stdout = getwriter('UTF-8')(sys.stdout)
 
 
 
