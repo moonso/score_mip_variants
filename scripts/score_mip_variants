@@ -20,7 +20,7 @@ import inspect
 import pkg_resources
 import click
 
-from codecs import open
+from codecs import open, getwriter
 from tempfile import NamedTemporaryFile
 from datetime import datetime
 
@@ -30,7 +30,8 @@ from score_mip_variants import variant_scorer, variant_sorter
 from ped_parser import parser as ped_parser
 from vcf_parser import parser as vcf_parser
 
-
+if sys.version_info < (3,0):
+    sys.stdout = getwriter('UTF-8')(sys.stdout)
 Version = pkg_resources.require("score_mip_variants")[0].version
 
 def check_file_existence(infile):
@@ -82,15 +83,15 @@ def print_version(ctx, param, value):
 
 
 @click.command()
+@click.argument('variant_file', 
+        nargs=1, 
+        type=click.Path(),
+        metavar='<vcf_file> or -'
+)
 @click.argument('family_file',
         nargs=1,
         type=click.Path(exists=True),
         metavar='<ped_file>'
-)
-@click.argument('variant_file', 
-        nargs=1, 
-        type=click.Path(exists=True),
-        metavar='<vcf_file>'
 )
 @click.option('--version',
         is_flag=True,
@@ -126,7 +127,11 @@ def score_mip_variants(family_file, variant_file, family_type, silent, outfile):
     
     # # Check the variants:
     
-    my_vcf_parser = vcf_parser.VCFParser(variant_file)
+    if variant_file == '-':
+        my_vcf_parser = vcf_parser.VCFParser(fsock = sys.stdin)
+    else:
+        my_vcf_parser = vcf_parser.VCFParser(infile = variant_file)
+    
     head = my_vcf_parser.metadata
         
     if set(my_family.individuals.keys()) != set(my_vcf_parser.individuals):
