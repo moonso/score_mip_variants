@@ -3,12 +3,8 @@
 """
 score_model.py
 
-Script that takes a batch of variants as input and modify it with a score depending on its different values.
-
-Possible names for the list of genetic models are:
-
-AD, AD_denovo, AR, AR_denovo, AR_compound, X, X_denovo
-
+Script that takes a batch of variants as input and generates a
+rank score calculated using a weigthed sum matrix.
 
 Created by Måns Magnusson on 2013-08-14.
 Copyright (c) 2013 __MyCompanyName__. All rights reserved.
@@ -20,332 +16,431 @@ from __future__ import unicode_literals
 
 import sys
 import os
-
+import numbers
+from collections import defaultdict
 from pprint import pprint as pp
 
-
-# from Mip_Family_Analysis.Utils import is_number
-#Frågor till Henrik:
-# CP = phastcons? eller ska vi köra någon av dbNSFP_phastCons100way_vertebrate, dbNSFP_phastCons46way_primate
-# DB = dbsnp_noflag?
-# Tidigare körde vi med Gerp base och Gerp region. Nu ser jag bara dbNSFP_GERP++_RS
-# Vilken av dbNSFP_phyloP100way_vertebrate och dbNSFP_phyloP46way_primate ska vi köra med?
-# Ibland 1000GMAF ibland 1000G_freq???
+# Import third party library
+# https://github.com/mitsuhiko/logbook
+from logbook import Logger, StderrHandler
+log = Logger('Logbook')
+log_handler = StderrHandler()
 
 
-consequence_severity = {}
-# This is the rank scores for the different consequences that VEP uses:
-consequence_severity['transcript_ablation'] = 5
-consequence_severity['splice_donor_variant'] = 4
-consequence_severity['splice_acceptor_variant'] = 4
-consequence_severity['stop_gained'] = 4
-consequence_severity['frameshift_variant'] = 4
-consequence_severity['stop_lost'] = 4
-consequence_severity['initiator_codon_variant'] = 4
-consequence_severity['inframe_insertion'] = 3
-consequence_severity['inframe_deletion'] = 3
-consequence_severity['missense_variant'] = 3
-consequence_severity['transcript_amplification'] = 3
-consequence_severity['splice_region_variant'] = 3
-consequence_severity['incomplete_terminal_codon_variant'] = 3
-consequence_severity['synonymous_variant'] = 1
-consequence_severity['stop_retained_variant'] = 1
-consequence_severity['coding_sequence_variant'] = 1
-consequence_severity['mature_miRNA_variant'] = 1
-consequence_severity['5_prime_UTR_variant'] = 1
-consequence_severity['3_prime_UTR_variant'] = 1
-consequence_severity['non_coding_exon_variant'] = 1
-consequence_severity['nc_transcript_variant'] = 1
-consequence_severity['intron_variant'] = 1
-consequence_severity['NMD_transcript_variant'] = 1
-consequence_severity['upstream_gene_variant'] = 1
-consequence_severity['downstream_gene_variant'] = 1
-consequence_severity['TFBS_ablation'] = 1
-consequence_severity['TFBS_amplification'] = 1
-consequence_severity['TF_binding_site_variant'] = 1
-consequence_severity['regulatory_region_variant'] = 1
-consequence_severity['regulatory_region_ablation'] = 1
-consequence_severity['regulatory_region_amplification'] = 1
-consequence_severity['feature_elongation'] = 1
-consequence_severity['feature_truncation'] = 1
-consequence_severity['intergenic_variant'] = 0
+def convert_to_number(record_element):
+    """Check if record_element is of type unicode and tries
+    to make record_element into float.
 
+    Args:
+        record_element  (element) : Variant record
 
-def is_number(number):
-    """Returns true if the string is a number or False otherwise"""
-    if type(number) == type(1) or type(number) == type(0.1) or type(number) == type('') or type(u''):
+    Return:
+        float:  If able
+        None:   If unable to turn into float
+    """
+    if isinstance(record_element, (unicode)):  # Unicode type
+
         try:
-            float(number)
-            return True
-        except ValueError:
-            return False
-        except TypeError:
-            return False
+
+            float(record_element)
+            return float(record_element)
+        except ValueError:  # Not a float
+
+            return None
+    else:  # Not unicode
+
+        return None
+
+
+def number_to_list(record_list, separator=','):
+    """Checks if record list contains numbers and
+    appends these to list and returns it.
+
+    Args:
+        record_list  (list) : Variant record
+
+    Return:
+        list:  Empty or with elements of type floats
+    """
+    score_list = []  # Create score list
+
+    for score in record_list.split(separator):  # Split record list
+
+        if isinstance(score, numbers.Number):  # Score is a number
+
+            score_list.append(score)
+        else:  # Try to convert into number
+
+            score_element = convert_to_number(score)
+
+            if score_element is not None:  # Score is a number
+
+                score_list.append(score_element)
+    return score_list
+
+
+def string_to_dict(record_list, separator=','):
+    """Adds record_elements as strings to a dictionnary. Saves
+    record string as lower case since config file keys are
+    automatically converted to lower case.
+
+    Args:
+        record_list  (list) : Variant record
+
+    Return:
+        dict:  Empty or keys as strings
+    """
+    term_dict = {}  # Create term dict
+
+    for term in record_list.split(separator):
+
+        if term is not None:
+
+            term_dict[str(term).lower()] = str(term.lower())
+    return term_dict
+
+
+def number_equal(element, value, score):
+    """Check if element equals config value
+
+    Args:
+        element  (float) : Usually vcf record
+        value    (float) : Config value
+        score    (integer) : config score
+
+    Return:
+        Float:  Score
+    """
+    if element == value:
+
+        return score
+
+
+def number_less_than(element, value, score):
+    """Check if element is lower than config value.
+
+    Args:
+        element  (float) : Usually vcf record
+        value    (float) : Config value
+        score    (integer) : config score
+
+    Return:
+        Float:  Score
+    """
+    if element < value:
+
+        return score
+
+
+def number_less_equal(element, value, score):
+    """Check if element is lower than or equal config value.
+
+    Args:
+        element  (float) : Usually vcf record
+        value    (float) : Config value
+        score    (integer) : config score
+
+    Return:
+        Float:  Score
+    """
+    if element <= value:
+
+        return score
+
+
+def number_greater_than(element, value, score):
+    """Check if element is greater than config value.
+
+    Args:
+        element  (float) : Usually vcf record
+        value    (float) : Config value
+        score    (integer) : config score
+
+    Return:
+        Float:  Score
+    """
+    if element > value:
+
+        return score
+
+
+def number_greater_equal(element, value, score):
+    """Check if element is greater than or equals config value.
+
+    Args:
+        element  (float) : Usually vcf record
+        value    (float) : Config value
+        score    (integer) : config score
+
+    Return:
+        Float:  Score
+    """
+    if element >= value:
+
+        return score
+
+
+def score_float(alt, record_list, value_dict, operation_dict,
+                score_dict, record_aggregate=max):
+    """Calculates the performance score for each element.
+
+    Args:
+        alt               (string) : Usually vcf key
+        record_list       (list) : list of record elements
+        value_dict        (dict) : Dictionnary of alt config value
+        operation_dict    (dict) : Dictionnary of alt comparisons
+        score_dict        (dict) : Dictionnary of alt config score
+        record_aggregate  (string, optional) : Method of record aggregation
+
+    Return:
+        Float:  Alternative final score for variant
+    """
+    score_list = []  # Collects all scores for vcf record
+    final_score = 0
+
+    ## Can be multiple fields within vcf record
+    for element in record_list:
+
+        for key in value_dict[alt]:
+
+            if operation_dict[alt][key] == "lt":
+
+                score_list.append(number_less_than(element,
+                                  float(value_dict[alt][key]),
+                                  float(score_dict[alt][key])))
+            elif operation_dict[alt][key] == "le":
+
+                score_list.append(number_less_equal(element,
+                                  float(value_dict[alt][key]),
+                                  float(score_dict[alt][key])))
+            elif operation_dict[alt][key] == "gt":
+
+                score_list.append(number_greater_than(element,
+                                  float(value_dict[alt][key]),
+                                  float(score_dict[alt][key])))
+            elif operation_dict[alt][key] == "ge":
+
+                score_list.append(number_greater_equal(element,
+                                  float(value_dict[alt][key]),
+                                  float(score_dict[alt][key])))
+            elif operation_dict[alt][key] == "e":
+
+                score_list.append(number_equal(element,
+                                  float(value_dict[alt][key]),
+                                  float(score_dict[alt][key])))
+    if score_list:
+
+        ## Remove None type
+        score_list = [i for i in score_list if i is not None]
+        if record_aggregate == "max":  # Keep highest score
+
+            final_score = max(score_list)
+        if record_aggregate == "min":  # Keep lowest score
+
+            final_score = min(score_list)
+    return final_score
+
+
+def score_string(alt, term_dict, value_dict, operation_dict,
+                 score_dict, record_aggregate=max):
+    """Calculates the performance score for each element.
+
+    Args:
+        alt               (string) : Usually vcf key
+        term_dict         (dict) : Dictionnary of alt config term
+        value_dict        (dict) : Dictionnary of alt config value
+        operation_dict    (dict) : Dictionnary of alt comparisons
+        score_dict        (dict) : Dictionnary of alt config score
+        record_aggregate  (string, optional) : Method of record aggregation
+
+    Return:
+        Float:  Alternative final score for variant
+    """
+    score_list = []  # Collects all scores for vcf record
+    final_score = 0  # Final score to return
+
+    ## Can be multiple fields within vcf record
+    for term in term_dict:
+
+        if term in value_dict[alt]:  # Term present in record
+
+            score_list.append(float(score_dict[alt][term]))
+        elif term == ".":  # No information on element
+
+            score_list.append(float(score_dict[alt]['notreported']))
+
+        if score_list:
+
+            ## Remove None type
+            score_list = [i for i in score_list if i is not None]
+            if record_aggregate == "max":  # Keep highest score
+
+                final_score = max(score_list)
+            if record_aggregate == "min":  # Keep lowest score
+
+                final_score = min(score_list)
+    return final_score
+
+
+def evaluate_float(alt, category, value_dict, operation_dict,
+                   score_dict, perf_score_dict, separator_list=None,
+                   record=None, record_aggregate=max, verbose=False):
+    """Evalutes vcf data type floats. Fileds can be separated on supplied
+    delimiter.
+
+    Args:
+        alt               (string) : Usually vcf key
+        category          (string) : alt config category
+        value_dict        (dict) : Dictionnary of alt config value
+        operation_dict    (dict) : Dictionnary of alt comparisons
+        score_dict        (dict) : Dictionnary of alt config score
+        perf_score_dict   (dict) : Dictionnary of category scores
+        separator_list    (list) : List of vcf record field delimiters
+        record            (unicode, optional) : vcf record
+        record_aggregate  (string, optional) : Method of record aggregation
+        verbose           (boolean, optional) : Enable informative print
+
+    Return:
+        Float:  Alternative final score for variant
+    """
+    if (separator_list) and (len(separator_list) > 0):  # Multiple elements
+
+        record_list = number_to_list(record, separator_list[0])
     else:
-        return False
+
+        record_list = number_to_list(record)
+    if len(record_list) > 0:
+
+        if verbose:
+
+            log.info("Record elements:" + str(record_list))
+        perf_score_dict[category].append(score_float(alt,
+                                         record_list,
+                                         value_dict,
+                                         operation_dict,
+                                         score_dict,
+                                         record_aggregate))
+    else:  # For instance "."
+
+        if (score_dict[alt]['notreported']):
+
+            perf_score_dict[category].append(float(
+                                             score_dict[alt]
+                                             ['notreported']))
 
 
-def score_variants(batch, prefered_models = []):
-    """Score a variant object according to Henriks score model. Input: A variant object and a list of genetic models."""
-    
-    if  prefered_models == ['NA']:
-        prefered_models = []
-    
+def score_variants(batch, predicted_models=[], alt_dict=None, score_dict=None,
+                   value_dict=None, operation_dict=None, verbose=False):
+    """Score a variant object according to a weigthed sum model and inserts
+    score in variant object info field.
+
+    Args:
+        batch             (object) : Variant object
+        predicted_models  (list, optional): List of predicted genetic models
+        alt_dict          (dict, optional) : Dictionnary of config alternatives
+        score_dict        (dict, optional) : Dictionnary of alt config score
+        value_dict        (dict, optional) : Dictionnary of alt config value
+        operation_dict    (dict, optional) : Dictionnary of alt comparisons
+        verbose           (boolean, optional) : Enable informative print
+
+    Return:
+        None:
+    """
     for variant_id in batch:
-        variant = batch[variant_id]
-        score = 0
-        info_dict = variant.get('info_dict', {})
-        
-        # Models of inheritance are annotated as GM=AR:AR_comp...
-        
-        variant_models = info_dict.get('GeneticModels','NA').split(',')
-        # Predictors
-        
-        mutation_taster = info_dict.get('dbNSFP_MutationTaster_score', None)
-        # print('dbNSFP_MutationTaster_score: %s' % mutation_taster)
-        
-        avsift = info_dict.get('Sift', None)
-        if avsift:
-            avsift = min([float(gene_score.split(':')[-1]) for gene_score in avsift.split(',')])
-            # print('First SIFT: %s' % avsift)
-        else:
-            avsift = info_dict.get('dbNSFP_SIFT_score', None)
-        # print('Second SIFT: %s' % avsift)
-        
-        poly_phen = info_dict.get('dbNSFP_Polyphen2_HVAR_score', None)
-        if poly_phen:
-            poly_phen = max([float(poly_score) for poly_score in poly_phen.split(',') if is_number(poly_score)])
-        # print('dbNSFP_Polyphen2_HVAR_score: %s' % poly_phen)
-        
-        
-        # Annotations:
-        most_severe = info_dict.get('MostSevereConsequence', None)
-        highest_consequence_score = 0
-        for gene_anno in most_severe.split(','):
-            new_score = consequence_severity.get(gene_anno.split(':')[-1], 0)
-            if new_score > highest_consequence_score:
-                highest_consequence_score = new_score
-        
-        #Ranges between 0-5. MAX=5
-        score += highest_consequence_score
-        
-        # Frequency in databases:
-        thousand_genomes_frequency = info_dict.get('1000GMAF', None)
-        # print('Thousand g freq: %s' % thousand_genomes_frequency)
-        dbsnp_frequency = info_dict.get('DbsnpMAF', None)
-        # print('dbSNP freq: %s' % dbsnp_frequency)
-        dbsnp129_frequency = info_dict.get('Dbsnp129MAF', None)
-        # print('dbSNP 129 freq: %s' % dbsnp129_frequency)
-        dbsnp_id = variant.get('ID', None)
-        # print('dbSNP ID: %s' % dbsnp_id)
-        esp_frequency = info_dict.get('ESPMAF', None)
-        # print('ESP freq: %s' % esp_frequency)
-        hbvdb = info_dict.get('BVDMAF', None)
-        # print('HBVDB freq: %s' % hbvdb)
-        
-        # Filter
-        
-        filt = variant.get('FILTER', 'NOTPASS').strip()
-        
-        # Conservation scores:
-        
-        # Base
-        gerp_base = info_dict.get('dbNSFP_GERP++_RS', None)
-        
-        # Region
-        mce64way = info_dict.get('dbNSFP_phastCons46way_primate', None)
-        # print('dbNSFP_phastCons46way_primate: %s' % mce64way)
-        
-        gerp_region = info_dict.get('dbNSFP_GERP++_NR', None)
-        #Hur ska vi göra med GERP region!!!???
-        phylop = info_dict.get('dbNSFP_phyloP46way_primate', None)
-        
-        # segdup = variant.get('Genomic_super_dups', None)
-        
-        # hgmd = variant.get('HGMD', None)
-        
-        # print('Score after most severe consequence %s' % score)
-        # print('Max score after this step 5\n')
-        # 
-        # print('Score before inheritance: %s' % score)
-        
-        # Inheritance ranges between -12 - 3, MAX=3
-        score += check_inheritance(variant_models, prefered_models)
-        # print('Score after inheritance: %s' % score)
-        # print('Max score after this step 8\n')
-        
-        # Predictions ranges between 0 - 3, MAX=3
-        score += check_predictions(mutation_taster, avsift, poly_phen)
-        # print('Predictors: %s, %s, %s' % (mutation_taster, avsift, poly_phen))
-        # print('Score after predictions: %s' % score)
-        # print('Max score after this step 11\n')
-        # score += check_functional_annotation(functional_annotation)
-        
-        # Frequenciy scores ranges between -12 - 5, MAX=5
-        score += check_frequency_score(thousand_genomes_frequency, dbsnp_frequency, hbvdb, esp_frequency, dbsnp_id)
-        # print('Frequencies: 1000g= %s, dbsnp129= %s, hbvdb= %s, ESP= %s' % (thousand_genomes_frequency, dbsnp_frequency, hbvdb, esp_frequency))
-        # print('Score after frequency: %s' % score)
-        # print('Max score after this step 16\n')
-        
-        # Filter ranges between 0 - 3, MAX=3
-        score += check_filter(filt)
-        # print('Filter = %s' % filt)
-        # print('Score after filter: %s' % score)
-        # print('Max score after this step 19\n')
-        
-        # Region conservation ranges between 0 - 2, MAX=2
-        score += check_region_conservation(mce64way, gerp_region)
-        # print('Region conservation: MCE64= %s, GERP= %s' % (mce64way, gerp_region))
-        # print('Score after region conservation: %s' % score)
-        # print('Max score after this step 21\n')
-        
-        # Ranges between 0 - 2, MAX=2
-        score += check_base_conservation(gerp_base)
-        # print('Base conservation: GERP= %s' % gerp_base)
-        # print('Score after base conservation: %s' % score)
-        # print('Max score after this step 23\n')
-        
-        # Phylop ranges between 0 - 2, MAX=2
-        score += check_phylop_score(phylop)
-        # print('Phylop = %s' % phylop)
-        # print('Score after phylop conservation: %s' % score)
-        # print('Max score after this step 25\n')
-        
-        # Ranges between -2 - 0, MAX=0
-        # score += check_segmental_duplication(segdup)
-        # Ranges between -0 - 1, MAX=1
-        # score += check_hgmd(hgmd)
-        variant['Individual_rank_score'] = score
-        
+
+        variant = batch[variant_id]  # Get variant
+        if verbose:
+            log.info("Variant Line: " + str(variant))
+        variant_score = 0  # Variant score
+        perf_score_dict = defaultdict(list)  # Performance score dict
+        info_dict = variant.get('info_dict', {})  # Create dict of info field
+        category_dict = {}  # Collects all alternative categories
+
+        for alt in alt_dict:  # Config alternatives
+
+            category = ""
+            record_aggregate = "max"  # Set default
+            separator_list = []
+
+            if verbose:
+
+                log.info("Alternative: " + alt)
+            category = alt_dict[alt]['category']  # Alias
+
+            if 'category_aggregate' in alt_dict[alt]:
+
+                category_dict[category] = alt_dict[alt]['category_aggregate']
+            if 'field_separators' in alt_dict[alt]:
+
+                separator_list = alt_dict[alt]['field_separators'].split('_')
+            if 'record_aggregate' in alt_dict[alt]:
+
+                record_aggregate = alt_dict[alt]['record_aggregate']
+            if alt in variant:  # Not a vcf INFO key
+
+                record = variant.get(alt, None)
+            else:  # Vcf INFO key
+
+                record = info_dict.get(alt, None)
+
+            if record:  # Record exists in vcf
+
+                if verbose:
+                    log.info("Record:" + record)
+                ## Number comparisons
+                if alt_dict[alt]['data_type'] == 'float':
+
+                    evaluate_float(alt, category,
+                                   value_dict, operation_dict,
+                                   score_dict, perf_score_dict,
+                                   separator_list, record,
+                                   record_aggregate, verbose)
+                ## String comparisons
+                if alt_dict[alt]['data_type'] == 'string':
+
+                    ## Split vcf info field
+                    if (separator_list) and (len(separator_list) > 0):
+
+                        term_dict = string_to_dict(record, separator_list[0])
+                    else:
+
+                        term_dict = {}  # Create term dict
+                        term_dict[str(record).lower()] = str(record.lower())
+                    perf_score_dict[category].append(score_string(alt,
+                                                     term_dict,
+                                                     value_dict,
+                                                     operation_dict,
+                                                     score_dict,
+                                                     record_aggregate))
+            else:  # No record found in vcf for this alternative
+
+                if (score_dict[alt]['notreported']):
+
+                    perf_score_dict[category].append(float(score_dict[alt]
+                                                           ['notreported']))
+            if verbose:
+                log.info(category + ": " + str(perf_score_dict[category]))
+
+        for category in category_dict:  # All should be numbers from here on
+
+            category_score = 0
+
+            if category_dict[category] == 'min':
+
+                category_score = min(perf_score_dict[category])
+            elif category_dict[category] == 'max':
+
+                category_score = max(perf_score_dict[category])
+            elif category_dict[category] == 'sum':
+
+                category_score = sum(perf_score_dict[category])
+            variant_score += category_score
+        if verbose:
+            log.info("Variant score " + str(variant_score))
+
+        variant['Individual_rank_score'] = int(variant_score)
+
     return
-    
-def check_inheritance(variant_models, prefered_models):
-    """Check if the models of inheritance are followed for the variant."""
-    #If any of the prefered models are followed:
-    for model_followed in variant_models:
-        if model_followed in prefered_models:
-            return 3
-    #Else if any model is followed
-        elif model_followed == 'NA':
-            return -12
-    return 1
-    
-def check_predictions(mutation_taster = None, avsift = None, poly_phen = None):
-    """Score the variant based on the scores from prediction databases."""
-    prediction_score = 0
-    if is_number(avsift):
-        if float(avsift) <= 0.05:
-            prediction_score += 1
-    if is_number(mutation_taster):
-        if float(mutation_taster) >= 0.05:
-            prediction_score += 1
-    if is_number(poly_phen):
-        if float(poly_phen) >= 0.85:
-            prediction_score += 1
-    return prediction_score
-    
-def check_functional_annotation(functional_annotation = None):
-    """Score the variant based on its functional annotation"""
-    functional_annotation_score = 0
-    if functional_annotation:
-        for gene in functional_annotation:
-            score = consequence_severity.get(functional_annotation[gene],0)
-            if score > functional_annotation_score:
-                functional_annotation_score = score
-    return functional_annotation_score
-    
-def check_frequency_score(thousand_genomes_frequency = None, dbsnp_frequency = None, hbvdb_frequency = None, 
-                            esp_frequency = None, dbsnp_id = None):
-    """Score the variant based on the frequency in population."""
-
-    frequency_score = 0
-    freq_scores = []
-    
-    def get_freq_score(frequency):
-        """Returns a score depending on the frequency"""
-        if is_number(frequency):
-            if float(frequency) <= 0.005:
-                return 2
-            elif float(frequency) <= 0.02:
-                return 1
-            #If common variant:
-            else:
-                    return -12
-        else:# If not existing in database
-            return 3
-    
-    freq_scores.append(get_freq_score(thousand_genomes_frequency))
-    freq_scores.append(get_freq_score(dbsnp_frequency))
-    freq_scores.append(get_freq_score(hbvdb_frequency))
-    freq_scores.append(get_freq_score(esp_frequency))
-    common = False
-    # If the variant if common in any database(if a score is negative) we give a low score:
-    for freq_score in freq_scores:
-        if freq_score < 0:
-            common = True
-    if common:
-        frequency_score = -12
-    else:
-        frequency_score += sum(freq_scores) // 3
-    # If variant has no ID in dbSNP it get an extra score
-        if dbsnp_id in ['-','.']:
-            frequency_score += 1
-    return frequency_score
-    
-def check_filter(filt):
-    """Check if variant has passed the filter process."""
-    filter_score = 0
-    if filt == 'PASS':
-        filter_score = 3
-    elif filt == 'PRES':
-        filter_score = 1
-    return filter_score
-    
-def check_region_conservation(mce64way = None, gerp_region = None):
-    """Score the variant based on what annotations it has for the region conservations"""
-    region_conservation_score = 0
-    if mce64way and gerp_region:
-        region_conservation_score += 2
-    elif mce64way or gerp_region:
-        region_conservation_score += 1
-    return region_conservation_score
-    
-def check_base_conservation(gerp_base_score = None):
-    """Score the variant based on the base level conservation."""
-    base_conservation_score = 0
-    if is_number(gerp_base_score):
-        if float(gerp_base_score) >= 4:
-            base_conservation_score += 2
-        elif float(gerp_base_score) >= 2:
-            base_conservation_score += 1
-    return base_conservation_score
-    
-def check_phylop_score(phylop = None):
-    """Score the variant based on the Phylop score."""
-    phylop_score = 0
-    if is_number(phylop):
-        if float(phylop) >= 0.9984188612:
-            phylop_score += 2
-        elif float(phylop) >= 0.95:
-            phylop_score += 1
-    return phylop_score
-    
-def check_segmental_duplication(segdup):
-    """Check if there are any annotations for segmental duplication"""
-    segdup_score = 0
-    if segdup != '-':
-        segdup_score -= 2
-    return segdup_score
-    
-def check_hgmd(hgmd):
-    """Check if the variant have any annotation from hgmd"""
-    hgmd_score = 0
-    if hgmd != '-':
-        hgmd_score += 1
-    return hgmd_score
-    
-    
-
 
 
 def main():
@@ -354,4 +449,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
