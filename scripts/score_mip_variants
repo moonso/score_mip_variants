@@ -30,34 +30,76 @@ from score_mip_variants import variant_scorer, variant_sorter
 from ped_parser import parser as ped_parser
 from vcf_parser import parser as vcf_parser
 
+# Import third party library
+# https://github.com/mitsuhiko/logbook
+from logbook import Logger, StderrHandler
+log = Logger('Logbook')
+log_handler = StderrHandler()
+
 if sys.version_info < (3,0):
     sys.stdout = getwriter('UTF-8')(sys.stdout)
+
 Version = pkg_resources.require("score_mip_variants")[0].version
 
+
+def check_plugin(plugin, my_vcf_parser, verbose=False):
+        """Collect keys from plugin and check vcf compatibility.
+
+        Args:
+            plugin        (tuple) : plugin cmd option
+            my_vcf_parser (object) : vcf_parser object
+            verbose       (boolean, optional) : Enable informative print
+
+        Returns:
+            dict:   Dictionnary of alternatives
+        """
+        if verbose:
+
+            log.info("Plugin: " + plugin)
+        # Collect supplied plugin
+        from score_mip_variants.plugin_reader import collectKeys
+        alt_dict, score_dict, value_dict, operation_dict = collectKeys("score_mip_variants/" + plugin + ".ini",
+                                                                       my_vcf_parser, verbose)
+        if verbose:
+
+            log.info("alt_dict:" + str(alt_dict))
+            log.info("score_dict: " + str(score_dict))
+            log.info("value_dict: " + str(value_dict))
+            log.info("operation_dict" + str(operation_dict))
+
+        return alt_dict, score_dict, value_dict, operation_dict
+
+
 def check_file_existence(infile):
-    """Check is the file exists. Quit if something is wrong."""
+    """Check if the file exists. Quit if something is wrong."""
     if not os.path.isfile(infile):
-        print('The file %s does not exist!!!\nPlease check what is wrong and rerun.\nExiting...' % infile)
+        print('The file %s does not exist!!!\n'
+              'Please check what is wrong and rerun.\nExiting...' % infile)
         sys.exit()
 
+
 def get_family(family_file, family_type):
-    """Return the family"""    
+    """Return the family"""
     my_family_parser = ped_parser.FamilyParser(family_file, family_type)
     # Stupid thing but for now when we only look at one family
     return my_family_parser.families.popitem()[1]
 
+
 def add_metadata(head, command_line_string):
     """Add metadata for the information added by this script."""
-    
-    head.add_info('RankScore', '1', 'Integer', "Combined rank score for the variant in this family.")
-    head.add_version_tracking('score_mip_variants', Version, str(datetime.now()), command_line_string)
-    
+
+    head.add_info('RankScore', '1', 'Integer',
+                  "Combined rank score for the variant in this family.")
+    head.add_version_tracking('score_mip_variants', Version,
+                              str(datetime.now()), command_line_string)
+
     return
+
 
 def print_headers(head, outfile=None, silent=False):
     """Print the headers to a results file."""
     if outfile:
-        with open(outfile, 'w', encoding='utf-8') as f: 
+        with open(outfile, 'w', encoding='utf-8') as f:
             for head_count in head.print_header():
                 f.write(head_count+'\n')
     else:
@@ -68,11 +110,13 @@ def print_headers(head, outfile=None, silent=False):
 
 
 def print_version(ctx, param, value):
-    """Callback function for printing version and exiting
+    """Callback function for printing version and exiting.
+
     Args:
-        ctx (object) : Current context
+        ctx   (object) : Current context
         param (object) : Click parameter(s)
         value (boolean) : Click parameter was supplied or not
+
     Returns:
         None:
     """
@@ -83,85 +127,103 @@ def print_version(ctx, param, value):
 
 
 @click.command()
-@click.argument('variant_file', 
-        nargs=1, 
-        type=click.Path(),
-        metavar='<vcf_file> or -'
-)
+@click.argument('variant_file',
+                nargs=1,
+                type=click.Path(),
+                metavar='<vcf_file> or -'
+                )
 @click.argument('family_file',
-        nargs=1,
-        type=click.Path(exists=True),
-        metavar='<ped_file>'
-)
+                nargs=1,
+                type=click.Path(exists=True),
+                metavar='<ped_file>'
+                )
 @click.option('--version',
-        is_flag=True,
-        callback=print_version,
-        expose_value=False,
-        is_eager=True
-)
-@click.option('-s' ,'--silent', 
-        is_flag=True,
-        help='Do not print the variants.'
-)
-@click.option('-o', '--outfile', 
-        type=click.Path(exists=False),
-        help='Specify the path to a file where results should be stored.'
-)
+              is_flag=True,
+              callback=print_version,
+              expose_value=False,
+              is_eager=True
+              )
+@click.option('-s', '--silent',
+              is_flag=True,
+              help='Do not print the variants.'
+              )
+@click.option('-o', '--outfile',
+              type=click.Path(exists=False),
+              help='Specify the path to a file where results should be stored.'
+              )
 @click.option('--family_type', '-fam',
-        type=click.Choice(['ped', 'alt', 'cmms', 'mip']),
-        default='cmms',
-        help='If the analysis use one of the known setups, please specify which one. Default is cmms.'
-)
-def score_mip_variants(family_file, variant_file, family_type, silent, outfile):
-    """Score the variants in a vcf file based on the MIP system."""
-    
+              type=click.Choice(['ped', 'alt', 'cmms', 'mip']),
+              default='cmms',
+              help='If the analysis use one of the known setups,'
+              'please specify which one. Default is cmms.'
+              )
+@click.option('-pi', '--plugin',
+              default="gm_cmms",
+              help="The plug-in(s)"
+              )
+@click.option('-v', '--verbose',
+              is_flag=True,
+              help='Increase output verbosity.'
+              )
+def score_mip_variants(family_file, variant_file, family_type,
+                       plugin, verbose, silent, outfile):
+    """Score the variants in a vcf file based using WSM plugin."""
+
     frame = inspect.currentframe()
     args, _, _, values = inspect.getargvalues(frame)
     argument_list = [i+'='+str(values[i]) for i in values if values[i] and i != 'args' and i != 'frame' and i != 'parser']
-    
+
     start_time_analysis = datetime.now()
-    
-    # Start by parsing at the pedigree file:
-    
+
+    ## Start by parsing at the pedigree file:
+
     my_family = get_family(family_file, family_type)
-    
-    # # Check the variants:
-    
+
+    ## Check the variants:
+
     if variant_file == '-':
-        my_vcf_parser = vcf_parser.VCFParser(fsock = sys.stdin)
+
+        my_vcf_parser = vcf_parser.VCFParser(fsock=sys.stdin)
     else:
-        my_vcf_parser = vcf_parser.VCFParser(infile = variant_file)
-    
+
+        my_vcf_parser = vcf_parser.VCFParser(infile=variant_file)
+
     head = my_vcf_parser.metadata
-        
+
     if set(my_family.individuals.keys()) != set(my_vcf_parser.individuals):
-        
-        print('There must be same individuals in ped file and vcf file! Aborting...')
-        print('Individuals in PED file: %s' % '\t'.join(list(my_family.individuals.keys())))
-        print('Individuals in VCF file: %s' % '\t'.join(list(my_vcf_parser.individuals)))
+
+        print('There must be same individuals in ped file and vcf file!'
+              'Aborting...')
+        print('Individuals in PED file: %s' % '\t'.
+              join(list(my_family.individuals.keys())))
+        print('Individuals in VCF file: %s' % '\t'.
+              join(list(my_vcf_parser.individuals)))
         sys.exit()
-    
-    
+
     temp_file = NamedTemporaryFile(delete=False)
     temp_file.close()
-    temporary_variant_file = open(temp_file.name, mode='w', encoding='utf-8', errors='replace')
-    
-    scorer = variant_scorer.VariantScorer(my_vcf_parser, temporary_variant_file, my_family.models_of_inheritance)
+    temporary_variant_file = open(temp_file.name, mode='w', encoding='utf-8',
+                                  errors='replace')
+    ## Collect config info
+    alt_dict, score_dict, value_dict, operation_dict = check_plugin(plugin, my_vcf_parser, verbose)
+    scorer = variant_scorer.VariantScorer(my_vcf_parser,
+                                          temporary_variant_file,
+                                          my_family.models_of_inheritance,
+                                          alt_dict, score_dict, value_dict,
+                                          operation_dict, verbose)
     scorer.parse()
-    
+
     temporary_variant_file.seek(0)
-    
-    
-    # Add the new metadata to the headers:
+
+    ## Add the new metadata to the headers:
     add_metadata(head, ','.join(argument_list))
     print_headers(head, outfile, silent)
-    
-    var_sorter = variant_sorter.FileSort(temporary_variant_file, outFile=outfile, silent=silent)
+
+    var_sorter = variant_sorter.FileSort(temporary_variant_file,
+                                         outFile=outfile, silent=silent)
     var_sorter.sort()
-    
+
     temporary_variant_file.close()
-    
 
 if __name__ == '__main__':
     score_mip_variants()
-
