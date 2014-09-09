@@ -386,6 +386,7 @@ def score_variants(batch, predicted_models=[], alt_dict=None, score_dict=None,
             if record:  # Record exists in vcf
 
                 if verbose:
+
                     log.info("Record:" + record)
                 ## Number comparisons
                 if alt_dict[alt]['data_type'] == 'float':
@@ -419,6 +420,7 @@ def score_variants(batch, predicted_models=[], alt_dict=None, score_dict=None,
                     perf_score_dict[category].append(float(score_dict[alt]
                                                            ['notreported']))
             if verbose:
+
                 log.info(category + ": " + str(perf_score_dict[category]))
 
         for category in category_dict:  # All should be numbers from here on

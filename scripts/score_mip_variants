@@ -56,7 +56,8 @@ def check_plugin(plugin, my_vcf_parser, verbose=False):
         if verbose:
 
             log.info("Plugin: " + plugin)
-        # Collect supplied plugin
+        check_file_existence("score_mip_variants/" + plugin + ".ini")
+        ## Collect supplied plugin
         from score_mip_variants.plugin_reader import collectKeys
         alt_dict, score_dict, value_dict, operation_dict = collectKeys("score_mip_variants/" + plugin + ".ini",
                                                                        my_vcf_parser, verbose)
@@ -71,10 +72,17 @@ def check_plugin(plugin, my_vcf_parser, verbose=False):
 
 
 def check_file_existence(infile):
-    """Check if the file exists. Quit if something is wrong."""
+    """Check if the file exists. Exit if file does not exist.
+    Args:
+        infile (file) : File
+
+    Returns:
+        None:
+    """
     if not os.path.isfile(infile):
-        print('The file %s does not exist!!!\n'
-              'Please check what is wrong and rerun.\nExiting...' % infile)
+        log.notice('The file ' + infile + ' does not exist!!!')
+        log.notice('Please check what is wrong and rerun.')
+        log.notice('Exiting...')
         sys.exit()
 
 

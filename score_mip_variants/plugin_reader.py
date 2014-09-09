@@ -55,7 +55,7 @@ def check_vcf_config(key, not_info_list, my_vcf_parser,
                    + '\n'
                    )
         log.notice('Aborting ranking' + '\n')
-        exit()
+        sys.exit()
 
 
 def collectKeys(config_file, my_vcf_parser, verbose):
