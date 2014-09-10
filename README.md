@@ -5,5 +5,5 @@ Variants should be annotated with vep, snpeff and genmod for best result.
 
 ###Usage###
 
-	score_mip_variants examples/trio_ped.txt examples/my_test.vcf
+	score_mip_variants examples/my_test.vcf examples/trio_ped.txt --plugin_file test.ini
 

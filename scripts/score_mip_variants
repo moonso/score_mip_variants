@@ -217,7 +217,7 @@ def score_mip_variants(family_file, variant_file, family_type,
                                   errors='replace')
     ## Collect config info
     if plugin_file == "gm_cmms_v1.0.ini":  #Default use package supplied plugin
-        plugin_file = pkg_resources.resource_filename('score_mip_variants', 'gm_cmms_v1.0.ini')
+        plugin_file = pkg_resources.resource_filename('score_mip_variants', 'score_mip_variants/gm_cmms_v1.0.ini')
     alt_dict, score_dict, value_dict, operation_dict = check_plugin(plugin_file, my_vcf_parser, verbose)
     scorer = variant_scorer.VariantScorer(my_vcf_parser,
                                           temporary_variant_file,
