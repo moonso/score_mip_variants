@@ -15,7 +15,7 @@ long_description = 'Add rank scores to variants in Variant Call Format (VCF) fil
 #     long_description = file.read()
 
 setup(name='score_mip_variants',
-    version='0.5.1',
+    version='0.5.4',
     description='Annotate vcf variants with a rank score',
     author = 'Mans Magnusson',
     author_email = 'mans.magnusson@scilifelab.se',
@@ -29,8 +29,12 @@ setup(name='score_mip_variants',
         'logbook',
     ],
     packages = [
-        'score_mip_variants'
+        'score_mip_variants',
+        'score_mip_variants/configs'
     ],
+    package_data = {
+        'score_mip_variants': ['configs/*.ini']
+    },
     scripts = [
         'scripts/score_mip_variants'
     ],
