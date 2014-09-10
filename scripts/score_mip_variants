@@ -43,11 +43,11 @@ if sys.version_info < (3,0):
 Version = pkg_resources.require("score_mip_variants")[0].version
 
 
-def check_plugin(plugin_file, my_vcf_parser, verbose=False):
-        """Collect keys from plugin_file and check vcf compatibility.
+def check_plugin(config_file, my_vcf_parser, verbose=False):
+        """Collect keys from config_file and check vcf compatibility.
 
         Args:
-            plugin_file   (file) : plugin file
+            config_file   (file) : plugin file
             my_vcf_parser (object) : vcf_parser object
             verbose       (boolean, optional) : Enable informative print
 
@@ -56,11 +56,11 @@ def check_plugin(plugin_file, my_vcf_parser, verbose=False):
         """
         if verbose:
 
-            log.info("Plugin file: " + plugin_file)
-        check_file_existence(plugin_file)
+            log.info("Plugin file: " + config_file)
+        check_file_existence(config_file)
         ## Collect supplied plugin
         from score_mip_variants.plugin_reader import collectKeys
-        alt_dict, score_dict, value_dict, operation_dict = collectKeys(plugin_file,
+        alt_dict, score_dict, value_dict, operation_dict = collectKeys(config_file,
                                                                        my_vcf_parser, verbose)
         if verbose:
 
@@ -168,8 +168,7 @@ def print_version(ctx, param, value):
               'please specify which one. Default is cmms.'
               )
 @click.option('-pi', '--plugin_file',
-              type=click.Path(exists=False),
-              default="gm_cmms_v1.0.ini",
+              type=click.Path(exists=True),
               help="The plug-in config file(.ini)"
               )
 @click.option('-v', '--verbose',
@@ -215,10 +214,12 @@ def score_mip_variants(family_file, variant_file, family_type,
     temp_file.close()
     temporary_variant_file = open(temp_file.name, mode='w', encoding='utf-8',
                                   errors='replace')
+    config_file = pkg_resources.resource_filename('score_mip_variants', 'configs/gm_cmms_v1.0.ini')
     ## Collect config info
-    if plugin_file == "gm_cmms_v1.0.ini":  #Default use package supplied plugin
-        plugin_file = pkg_resources.resource_filename('score_mip_variants', 'gm_cmms_v1.0.ini')
-    alt_dict, score_dict, value_dict, operation_dict = check_plugin(plugin_file, my_vcf_parser, verbose)
+    if plugin_file:  #Default use package supplied plugin
+        config_file = plugin_file
+    
+    alt_dict, score_dict, value_dict, operation_dict = check_plugin(config_file, my_vcf_parser, verbose)
     scorer = variant_scorer.VariantScorer(my_vcf_parser,
                                           temporary_variant_file,
                                           my_family.models_of_inheritance,
