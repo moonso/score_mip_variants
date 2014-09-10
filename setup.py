@@ -33,7 +33,7 @@ setup(name='score_mip_variants',
         'score_mip_variants/configs'
     ],
     package_data = {
-        'score_mip_variants': 'configs/*.ini'
+        'score_mip_variants': ['configs/*.ini']
     },
     scripts = [
         'scripts/score_mip_variants'
