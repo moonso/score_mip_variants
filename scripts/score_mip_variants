@@ -42,11 +42,11 @@ if sys.version_info < (3,0):
 Version = pkg_resources.require("score_mip_variants")[0].version
 
 
-def check_plugin(plugin, my_vcf_parser, verbose=False):
-        """Collect keys from plugin and check vcf compatibility.
+def check_plugin(plugin_file, my_vcf_parser, verbose=False):
+        """Collect keys from plugin_file and check vcf compatibility.
 
         Args:
-            plugin        (tuple) : plugin cmd option
+            plugin_file   (file) : plugin file
             my_vcf_parser (object) : vcf_parser object
             verbose       (boolean, optional) : Enable informative print
 
@@ -55,11 +55,10 @@ def check_plugin(plugin, my_vcf_parser, verbose=False):
         """
         if verbose:
 
-            log.info("Plugin: " + plugin)
-        check_file_existence("score_mip_variants/" + plugin + ".ini")
+            log.info("Plugin file: " + plugin_file)
         ## Collect supplied plugin
         from score_mip_variants.plugin_reader import collectKeys
-        alt_dict, score_dict, value_dict, operation_dict = collectKeys("score_mip_variants/" + plugin + ".ini",
+        alt_dict, score_dict, value_dict, operation_dict = collectKeys(plugin_file,
                                                                        my_vcf_parser, verbose)
         if verbose:
 
@@ -80,6 +79,7 @@ def check_file_existence(infile):
         None:
     """
     if not os.path.isfile(infile):
+
         log.notice('The file ' + infile + ' does not exist!!!')
         log.notice('Please check what is wrong and rerun.')
         log.notice('Exiting...')
@@ -165,17 +165,18 @@ def print_version(ctx, param, value):
               help='If the analysis use one of the known setups,'
               'please specify which one. Default is cmms.'
               )
-@click.option('-pi', '--plugin',
-              default="gm_cmms",
-              help="The plug-in(s)"
+@click.option('-pi', '--plugin_file',
+              type=click.Path(exists=True),
+              default="score_mip_variants/gm_cmms_v1.0.ini",
+              help="The plug-in config file(.ini)"
               )
 @click.option('-v', '--verbose',
               is_flag=True,
               help='Increase output verbosity.'
               )
 def score_mip_variants(family_file, variant_file, family_type,
-                       plugin, verbose, silent, outfile):
-    """Score the variants in a vcf file based using WSM plugin."""
+                       plugin_file, verbose, silent, outfile):
+    """Score variants in a vcf file using WSM plugin."""
 
     frame = inspect.currentframe()
     args, _, _, values = inspect.getargvalues(frame)
@@ -213,7 +214,7 @@ def score_mip_variants(family_file, variant_file, family_type,
     temporary_variant_file = open(temp_file.name, mode='w', encoding='utf-8',
                                   errors='replace')
     ## Collect config info
-    alt_dict, score_dict, value_dict, operation_dict = check_plugin(plugin, my_vcf_parser, verbose)
+    alt_dict, score_dict, value_dict, operation_dict = check_plugin(plugin_file, my_vcf_parser, verbose)
     scorer = variant_scorer.VariantScorer(my_vcf_parser,
                                           temporary_variant_file,
                                           my_family.models_of_inheritance,
