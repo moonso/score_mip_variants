@@ -3,13 +3,16 @@
 
 import configparser
 
-config = configparser.ConfigParser()
+config = configparser.ConfigParser(allow_no_value=True)
+
+config.add_section('meta_information')
+config.set('meta_information', '## data_type = data record type')
 
 config['Plug-in'] = {'name': 'gm_cmms',
                      'version': '1.0',
                      }
 config['1000GMAF'] = {'data_type': 'float',
-                      'category': 'Frequency',
+                      'category': 'allele_frequency',
                       'category_aggregate': 'min',
                       'record_aggregate': 'max',
                       'value-notreported': 'na:na',
@@ -22,7 +25,7 @@ config['1000GMAF'] = {'data_type': 'float',
                       'score-common': '-12',
                       }
 config['DbsnpMAF'] = {'data_type': 'float',
-                      'category': 'Frequency',
+                      'category': 'allele_frequency',
                       'category_aggregate': 'min',
                       'record_aggregate': 'max',
                       'value-notreported': 'na:na',
@@ -35,7 +38,7 @@ config['DbsnpMAF'] = {'data_type': 'float',
                       'score-common': '-12',
                       }
 config['Dbsnp129MAF'] = {'data_type': 'float',
-                         'category': 'Frequency',
+                         'category': 'allele_frequency',
                          'category_aggregate': 'min',
                          'record_aggregate': 'max',
                          'value-notreported': 'na:na',
@@ -48,7 +51,7 @@ config['Dbsnp129MAF'] = {'data_type': 'float',
                          'score-common': '-12',
                          }
 config['ESPMAF'] = {'data_type': 'float',
-                    'category': 'Frequency',
+                    'category': 'allele_frequency',
                     'category_aggregate': 'min',
                     'record_aggregate': 'max',
                     'value-notreported': 'na:na',
@@ -270,5 +273,5 @@ config['CLNSIG'] = {'data_type': 'float',
                     'value-notreported': 'na:na',
                     }
 
-with open('gm_cmms.ini', 'w') as configfile:
+with open('gm_cmms_v1.0.ini', 'w') as configfile:
     config.write(configfile)
