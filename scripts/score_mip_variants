@@ -214,7 +214,7 @@ def score_mip_variants(family_file, variant_file, family_type,
     temp_file.close()
     temporary_variant_file = open(temp_file.name, mode='w', encoding='utf-8',
                                   errors='replace')
-    config_file = pkg_resources.resource_filename('score_mip_variants', 'configs/gm_cmms_v1.0.ini')
+    config_file = pkg_resources.resource_filename('score_mip_variants', 'configs/rank_model_cmms_v1.0.ini')
     ## Collect config info
     if plugin_file:  #Default use package supplied plugin
         config_file = plugin_file

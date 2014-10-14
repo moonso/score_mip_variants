@@ -17,6 +17,7 @@ from __future__ import unicode_literals
 import sys
 import os
 import numbers
+import re
 from collections import defaultdict
 from pprint import pprint as pp
 
@@ -58,6 +59,7 @@ def number_to_list(record_list, separator=','):
 
     Args:
         record_list  (list) : Variant record
+        separator    (string, optional): The separator to use in split
 
     Return:
         list:  Empty or with elements of type floats
@@ -79,24 +81,48 @@ def number_to_list(record_list, separator=','):
     return score_list
 
 
-def string_to_dict(record_list, separator=','):
-    """Adds record_elements as strings to a dictionnary. Saves
-    record string as lower case since config file keys are
+def string_to_dict(term_list):
+    """Adds term_list as strings to a dictionnary. Saves
+    term string as lower case since config file keys are
     automatically converted to lower case.
 
     Args:
-        record_list  (list) : Variant record
+        term_list  (list) : Variant record terms list
 
     Return:
         dict:  Empty or keys as strings
     """
     term_dict = {}  # Create term dict
 
-    for term in record_list.split(separator):
+    for term in term_list:
 
         if term is not None:
 
             term_dict[str(term).lower()] = str(term.lower())
+    return term_dict
+
+
+def split_record(record_list, separator_list):
+    """Splits a list on multiple separators
+
+    Args:
+        record_list     (list) : Variant record
+        separator_list  (lsit) : Separators to use in split
+
+    Return:
+        dict:  Empty or keys as strings
+    """
+
+    term = "["  # Create string for resplit
+
+    ## Collect separator(s)
+    for separator in separator_list:
+        term += separator
+    term += "]"  # Closing the string
+
+    term_list = filter(None, re.split(term, record_list))
+    term_dict = string_to_dict(term_list)
+
     return term_dict
 
 
@@ -402,7 +428,7 @@ def score_variants(batch, predicted_models=[], alt_dict=None, score_dict=None,
                     ## Split vcf info field
                     if (separator_list) and (len(separator_list) > 0):
 
-                        term_dict = string_to_dict(record, separator_list[0])
+                        term_dict = split_record(record, separator_list)
                     else:
 
                         term_dict = {}  # Create term dict
