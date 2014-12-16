@@ -15,14 +15,14 @@ long_description = 'Add rank scores to variants in Variant Call Format (VCF) fil
 #     long_description = file.read()
 
 setup(name='score_mip_variants',
-    version='0.5.5',
+    version='0.6',
     description='Annotate vcf variants with a rank score',
     author = 'Mans Magnusson',
     author_email = 'mans.magnusson@scilifelab.se',
     url = 'http://github.com/moonso/rank_mip_variants',
     license = 'MIT License',
     install_requires=[
-        'vcf_parser', 
+        'vcf_parser >= 1.0', 
         'ped_parser', 
         'click',
         'configparser',
