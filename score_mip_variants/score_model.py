@@ -408,13 +408,14 @@ def score_variants(batch, predicted_models=[], alt_dict=None, score_dict=None,
             else:  # Vcf INFO key
 
 		record_list = info_dict.get(alt, None)
+		record = None
 
                 ## Create string from list
                 if record_list:
 
                     record = ','.join(record_list)
 
-            if record:  # Record exists in vcf
+            if record is not None:  # Record exists in vcf
 
                 if verbose:
 
