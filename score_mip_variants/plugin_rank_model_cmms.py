@@ -9,9 +9,9 @@ config.add_section('meta_information')
 config.set('meta_information', '## data_type = data record type')
 
 config['Plug-in'] = {'name': 'rank_model_cmms',
-                     'version': '1.0',
+                     'version': '1.2',
                      }
-config['1000GMAF'] = {'data_type': 'float',
+config['1000GAF'] = {'data_type': 'float',
                       'category': 'allele_frequency',
                       'category_aggregate': 'min',
                       'record_aggregate': 'max',
@@ -24,33 +24,7 @@ config['1000GMAF'] = {'data_type': 'float',
                       'score-intermediate': '1',
                       'score-common': '-12',
                       }
-config['DbsnpMAF'] = {'data_type': 'float',
-                      'category': 'allele_frequency',
-                      'category_aggregate': 'min',
-                      'record_aggregate': 'max',
-                      'value-notreported': 'na:na',
-                      'value-rare': 'le:0.005',
-                      'value-intermediate': 'le:0.02',
-                      'value-common': 'gt:0.02',
-                      'score-notreported': '3',
-                      'score-rare': '2',
-                      'score-intermediate': '1',
-                      'score-common': '-12',
-                      }
-config['Dbsnp129MAF'] = {'data_type': 'float',
-                         'category': 'allele_frequency',
-                         'category_aggregate': 'min',
-                         'record_aggregate': 'max',
-                         'value-notreported': 'na:na',
-                         'value-rare': 'le:0.005',
-                         'value-intermediate': 'le:0.02',
-                         'value-common': 'gt:0.02',
-                         'score-notreported': '3',
-                         'score-rare': '2',
-                         'score-intermediate': '1',
-                         'score-common': '-12',
-                         }
-config['ESPMAF'] = {'data_type': 'float',
+config['EXACAF'] = {'data_type': 'float',
                     'category': 'allele_frequency',
                     'category_aggregate': 'min',
                     'record_aggregate': 'max',
@@ -221,7 +195,7 @@ config['dbNSFP_phastCons100way_vertebrate'] = {'data_type': 'float',
                                                'score-conserved': '1',
                                                'score-notconserved': '0',
                                                'score-notreported': '0',
-                              }
+                                               }
 config['dbNSFP_phyloP100way_vertebrate'] = {'data_type': 'float',
                                             'category': 'Conservation',
                                             'category_aggregate': 'sum',
@@ -273,5 +247,5 @@ config['CLNSIG'] = {'data_type': 'float',
                     'value-notreported': 'na:na',
                     }
 
-with open('rank_model_cmms_v1.0.ini', 'w') as configfile:
+with open('rank_model_cmms_v1.2.ini', 'w') as configfile:
     config.write(configfile)
