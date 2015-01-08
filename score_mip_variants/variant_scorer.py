@@ -52,7 +52,7 @@ class VariantScorer(object):
         """Score the compounds in a batch."""
         for var in batch:
             if batch[var]['info_dict'].get('Compounds', None):
-                compounds = batch[var]['info_dict']['Compounds'].split(',')
+                compounds = batch[var]['info_dict']['Compounds']
                 comp_list = []
                 for comp in compounds:
                     comp_score = (int(batch[var].get(
